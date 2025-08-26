@@ -8,11 +8,24 @@ ArtikelChoice {
 WordDisplay {
     content-align: center middle;
     height: 3;
+    border: blue;
     }
 
 ResultsDisplay {
     content-align: center top;
     height: 10;
+    width: 50%;
+    border: green;
+    height: 100%;
+    }
+    
+HistoryDisplay {
+    content-align: left top;
+    height: 10;
+    width: 50%;
+    border: red;
+    height: 100%;
+    background: grey 5%;
     }
 .choice_col {
     height: 15; 
@@ -23,6 +36,15 @@ ResultsDisplay {
     content-align: center middle;
     }
 
+.der_label {
+    color: green;
+    }
+.die_label {
+    color: red;
+    }
+.das_label {
+    color: orange;
+    }
 Button {
     width: 100%;
     margin: 1;
@@ -30,8 +52,12 @@ Button {
 
 }
 
-Horizontal {
+.btn_row {
     height: 5;
+    }
+.insight_row {
+    height: 15;
+    border: white;
     }
 
 Vertical {

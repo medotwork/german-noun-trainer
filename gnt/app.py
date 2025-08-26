@@ -1,13 +1,21 @@
 import os
+from typing import List
 from datetime import datetime
 from pathlib import Path
 from random import sample
+from dataclasses import dataclass
+
+from textual import events
+from textual.screen import Screen
+from textual.containers import Horizontal, Vertical
+from textual.reactive import reactive
+from textual.app import App, ComposeResult
+from textual.widgets import Header, Footer, Button, Static, Label
 
 from processors import Evaluator
-from textual import events
-from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical, ScrollableContainer
-from textual.widgets import Header, Footer, Button, Static
+
+GREEN_LIGHT = "🟢"
+RED_LIGHT = "🔴"
 
 class WordDisplay(Static):
     """ Widget to display word"""
@@ -16,11 +24,27 @@ class ResultsDisplay(Static):
     """ Widget to display results"""
     def __init__(self) -> None:
         super().__init__()
-        self.rendered_result = WordDisplay("PLACEHOLDER")
+        self.rendered_result = Static("")
 
     def compose(self) -> None:
         yield self.rendered_result
-    
+
+class HistoryDisplay(Static):
+    history = reactive(list, recompose=True)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.history = []
+
+    def add_to_history(self, new, classes):
+        if len(self.history)>=10:
+            self.history.pop(9)
+        self.history = [(new, classes)] + self.history
+
+    def compose(self) -> None:
+        for i in self.history:
+            yield Label(i[0], classes=i[1]) 
+
 class ArtikelChoice(Static):
     """ Widget to display article options"""
     def __init__(self):
@@ -33,7 +57,7 @@ class ArtikelChoice(Static):
     def compose(self) -> ComposeResult:
         """Create article choice buttons"""
         yield self.word_display
-        with Horizontal():
+        with Horizontal(classes="btn_row"):
             with Vertical(classes="btn_col"):
                 yield Button("der", id="btn_der")
             with Vertical(classes="btn_col"):
@@ -41,6 +65,59 @@ class ArtikelChoice(Static):
             with Vertical(classes="btn_col"):
                 yield Button("das", id="btn_das")
         yield self.word_translation_display
+
+@dataclass
+class DEArtikel:
+    artikel: str
+    
+    def color(self):
+        return 
+    
+#class DEArtikel(Enum):
+#    der: 'der'
+#    die: 'die'
+#    das: 'das'
+
+class WordDictEntry:
+    def __init__(self, word_en, word_de, word_de_artikel):
+        self.word_en = self.word_en
+        self.word_de = self.word_de,
+        self.word_de_artikel = self.word_de_artikel
+
+DEFAULT_DATA_FILE_NAME = "most_common_nouns.csv"
+DEFAULT_DATA_FILE_PATH = Path(__file__).parent / "data"
+class WordDict:
+    def __init__(self, entries: List[WordDictEntry]):
+        self.entries = entries
+    
+    @staticmethod
+    def from_default_csv(path: Path= DEFAULT_DATA_FILE_PATH  / DEFAULT_DATA_FILE_NAME):
+        if not Path.exists(path):
+            raise Exception(f"Could not find word dict data: {str(path.absolute())}")
+
+        with open(path, 'r', encoding='utf8') as default_csv:
+            word_data = default_csv.readlines()
+
+        self.words_dict = {index: item.strip().split('\t') for index, item in enumerate(word_data)}
+
+        entries: List[WordDictEntry] = [] 
+        for k, v in self.words_dict.items():
+            entries.append(
+                    WordDictEntry(
+                        word_en = v[0].split(' ')[1],
+                        word_de = v[1].split(' ')[1] if ' ' in v[1] else '',
+                        word_de_artikel = v[1].split(' ')[0].lower() if ' ' in v[1] else v[1],
+                        )
+                    )
+        return WordDict(entries = entries) 
+
+    def select_word(self):
+        selected_index = sample(range(0, len(self.entries)), 1)[0]
+        return selected_index, self.entries[selected_index]
+
+    def verify_index(self, selected_index: int, artikel: DEArtikel):
+        return 1 if self.entries[selected_index].word_de_artikel == artikel else 0
+
 
 class ArtikelApp(App):
     """An app for quick practice of german articles"""
@@ -54,6 +131,11 @@ class ArtikelApp(App):
             "o": "die",
             "p": "das",
             }
+    GENUS_COLOR_MAP = {
+            "der": "der_label",
+            "die": "die_label",
+            "das": "das_label"
+            }
 
     def __init__(self):
         super().__init__()
@@ -62,6 +144,8 @@ class ArtikelApp(App):
         self.artikel_choice = None
         self.results_box = None
         self.filter_mode = "n"
+
+        
 
     def on_mount(self) -> None:
         """ Run on creation of app """
@@ -93,8 +177,11 @@ class ArtikelApp(App):
         yield Footer()
         self.artikel_choice = ArtikelChoice()
         yield self.artikel_choice
-        self.results_box = ResultsDisplay()
-        yield self.results_box
+        with Horizontal(classes="insight_row"):
+            self.results_box = ResultsDisplay()
+            yield self.results_box
+            self.history_box = HistoryDisplay()
+            yield self.history_box
 
     def action_toggle_dark(self) -> None:
         """Action to toggle dark mode """
@@ -107,6 +194,17 @@ class ArtikelApp(App):
         set_idx = sample(range(0,2000), self.SET_SIZE)
         selected_word = self.words_dict[set_idx[0]]
 
+        self.history_box.add_to_history(
+                new = self.artikel_choice.word_data['de artikel'] + \
+                " " + \
+                self.artikel_choice.word_data['de'] + \
+                " - " + \
+                self.artikel_choice.word_data['en']
+                , 
+                classes = self.GENUS_COLOR_MAP[
+                    self.artikel_choice.word_data['de artikel']
+                    ]) if self.artikel_choice.word_data else None
+
         self.current_id = set_idx[0]
         self.artikel_choice.word_display.update(selected_word['de'])
         self.artikel_choice.word_data = selected_word
@@ -117,13 +215,10 @@ class ArtikelApp(App):
             self._next_noun()
 
         if event.key in self.KEY_MAP:
-            if self.KEY_MAP[event.key] == self.artikel_choice.word_data['de artikel']:
-                with open(self.daily_record_path, 'a', encoding='utf8') as f:
-                    f.write(f"{self.current_id}\t1\n")
-                self._next_noun()
-            else:
-                with open(self.daily_record_path, 'a', encoding='utf8') as f:
-                    f.write(f"{self.current_id}\t0\n")
+            correct_choice = (self.KEY_MAP[event.key] == self.artikel_choice.word_data['de artikel'])
+            with open(self.daily_record_path, 'a', encoding='utf8') as f:
+                f.write(f"{self.current_id}\t{int(correct_choice)}\n")
+            self._next_noun() if correct_choice else None
 
         if event.key == "w":
             self.artikel_choice.word_translation_display.visible = not self.artikel_choice.word_translation_display.visible  
@@ -135,6 +230,11 @@ class ArtikelApp(App):
 
             self.results_box.rendered_result.update(evaluation_text)
             #self.results_box.visible = not self.results_box.visible
+
+class InputScreen(Screen):
+    def compose(self) -> ComposeResult:
+        yield Input(placeholder="test input")
+
 
 if __name__ == "__main__":
     app = ArtikelApp()

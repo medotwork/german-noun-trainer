@@ -65,5 +65,6 @@ class Evaluator:
                     (datetime.strptime(result[0], '%Y-%m-%d').date(),
                 round(np.mean([i[1] for i in result[1]])*100, 2))
                     )
+        out = sorted(out, key=lambda x: x[0], reverse=True)
 
         return out
