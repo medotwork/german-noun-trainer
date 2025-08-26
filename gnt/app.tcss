@@ -1,0 +1,46 @@
+ArtikelChoice {
+    width: 100%;
+    margin: 1;
+    padding: 1;
+    height: 25;
+}
+
+WordDisplay {
+    content-align: center middle;
+    height: 3;
+    }
+
+ResultsDisplay {
+    content-align: center top;
+    height: 10;
+    }
+.choice_col {
+    height: 15; 
+    }
+
+.btn_col {
+    width: 33%;
+    content-align: center middle;
+    }
+
+Button {
+    width: 100%;
+    margin: 1;
+    padding: 1;
+
+}
+
+Horizontal {
+    height: 5;
+    }
+
+Vertical {
+    }
+#btn_der {
+}
+
+#btn_die {
+}
+
+#btn_das {
+}
