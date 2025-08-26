@@ -1,2 +1,7 @@
 german-nouns
 numpy
+textual
+textual-dev
+textual-serve
+pytest
+pytest-cov

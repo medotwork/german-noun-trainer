@@ -49,8 +49,8 @@ class Evaluator:
 
         day_list += [(None, None)]
         
-        return [(i[0],0.0) if i[0]==j[0] and j[1]==0 else (0,1.0) for i, j in zip(day_list, day_previous_item_list) if i[1]]
-#        return [(i[0], 0.0) if (i[0]==j[0] and j[1]==0) else (i[0], 1.0) for i, j in zip(day_list, day_previous_item_list) if i[1]]
+#        return [(i[0],0.0) if i[0]==j[0] and j[1]==0 else (0,1.0) for i, j in zip(day_list, day_previous_item_list) if i[1]==1]
+        return [(int(i[0]), 1.0) if (i[0]!=j[0]) else (int(i[0]), 0.0) for i,j in zip(day_list, day_previous_item_list) if i[1]=='1']
 
     @staticmethod
     def evaluate(data_file: str, mode: str = 'daily'):
