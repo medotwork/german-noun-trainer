@@ -1,0 +1,21 @@
+from dataclasses import dataclass
+from enum import Enum
+
+@dataclass
+class Artikel:
+    lowercase: str
+    color_key: str
+    keyboard_key: str
+
+class DeArtikels(Artikel, Enum):
+    DER = 'der', 'der_label', 'i'
+    DIE = 'die', 'die_label', 'o'
+    DAS = 'das', 'das_label', 'p'
+
+    def __eq__(a, b):
+        return a.lowercase == b.lowercase
+
+    @classmethod
+    def from_key(cls, key: str):
+        return next((artikel for artikel in (cls.DER, cls.DIE, cls.DAS) if artikel.lowercase == key), None)
+
