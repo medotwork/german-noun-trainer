@@ -15,7 +15,11 @@ class TestDeArtikel(unittest.TestCase):
 
     def test_eq(self):
         self.assertTrue(DeArtikels.from_lowercase('die') == DeArtikels.DIE)
+        self.assertTrue(DeArtikels.from_lowercase('der') == DeArtikels.DER)
+        self.assertTrue(DeArtikels.from_lowercase('das') == DeArtikels.DAS)
+
         self.assertFalse(DeArtikels.from_lowercase('die') == DeArtikels.DER)
+        self.assertFalse(DeArtikels.from_lowercase('die') == DeArtikels.DAS)
 
     def test_keys(self):
         self.assertIsInstance(DeArtikels.keys(), list)
@@ -63,6 +67,7 @@ class TestWordDict(unittest.TestCase):
         artikel_options.pop(artikel_options.index(selected_word.word_de_artikel))
 
         self.assertFalse(word_dict.verify_index(selected_index, artikel_options[0]))
+        self.assertFalse(word_dict.verify_index(selected_index, artikel_options[1]))
 
 
 if __name__ == '__main__':

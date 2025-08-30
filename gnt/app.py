@@ -90,7 +90,7 @@ class ArtikelApp(App):
         today = datetime.now().strftime("%Y-%m-%d.log")
         self.daily_record_path = records_folder / 'default' / today
 
-        for d in [records_folder, self.daily_record_path.stem]:
+        for d in [records_folder, records_folder / 'default']:
             if not os.path.exists(d):
                 os.mkdir(d)
 
@@ -129,8 +129,9 @@ class ArtikelApp(App):
         self.artikel_choice.word_translation_display.update(selected_word.word_en)
 
     def on_key(self, event: events.Key) -> None:
-        if self.artikel_choice.word_data is None:
+        if self.artikel_choice.selected_word is None:
             self._next_noun()
+            return 1
 
         if event.key in DeArtikels.keys():
             verify_result = self.words_dict.verify_index(self.current_id, DeArtikels.from_key(event.key))
@@ -138,17 +139,19 @@ class ArtikelApp(App):
                 f.write(f"{self.current_id}\t{int(verify_result)}\n")
             if verify_result:
                 self._next_noun()
+            return 1
 
         if event.key == "w":
             self.artikel_choice.word_translation_display.visible = not self.artikel_choice.word_translation_display.visible  
         elif event.key == "e":
             #if not self.results_box.visible:
-            evaluation = Evaluator.evaluate(self.data_file.stem)
+            evaluation = Evaluator.evaluate('default')
             evaluation_list_out = evaluation[0:5] if len(evaluation)>=5 else evaluation
             evaluation_text = '\n'.join([f"{i[0]}\t{i[1]}" for i in evaluation_list_out])
 
             self.results_box.rendered_result.update(evaluation_text)
             #self.results_box.visible = not self.results_box.visible
+        return 0
 
 class InputScreen(Screen):
     def compose(self) -> ComposeResult:
