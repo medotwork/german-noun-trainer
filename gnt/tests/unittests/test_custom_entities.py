@@ -5,17 +5,20 @@ from models.article import DeArtikels
 import unittest
 
 class TestDeArtikel(unittest.TestCase):
-    def test_from_key(self):
+    def test_from_lowercase(self):
         self.assertTrue(DeArtikels.DER.lowercase=='der')
-        self.assertTrue(DeArtikels.from_key('der').lowercase == 'der')
-        self.assertTrue(DeArtikels.from_key('das').lowercase == 'das')
-        self.assertTrue(DeArtikels.from_key('die').lowercase == 'die')
-        self.assertFalse(DeArtikels.from_key('die').lowercase == 'das')
-        self.assertIsNone(DeArtikels.from_key('DIE'))
+        self.assertTrue(DeArtikels.from_lowercase('der').lowercase == 'der')
+        self.assertTrue(DeArtikels.from_lowercase('das').lowercase == 'das')
+        self.assertTrue(DeArtikels.from_lowercase('die').lowercase == 'die')
+        self.assertFalse(DeArtikels.from_lowercase('die').lowercase == 'das')
+        self.assertIsNone(DeArtikels.from_lowercase('DIE'))
 
     def test_eq(self):
-        self.assertTrue(DeArtikels.from_key('die') == DeArtikels.DIE)
-        self.assertFalse(DeArtikels.from_key('die') == DeArtikels.DER)
+        self.assertTrue(DeArtikels.from_lowercase('die') == DeArtikels.DIE)
+        self.assertFalse(DeArtikels.from_lowercase('die') == DeArtikels.DER)
+
+    def test_keys(self):
+        self.assertIsInstance(DeArtikels.keys(), list)
 
 class TestWordDictEntry(unittest.TestCase):
     def test_init(self):
@@ -28,15 +31,21 @@ class TestWordDictEntry(unittest.TestCase):
         self.assertFalse(WordDictEntry(*entries_input[0]).word_de_artikel.lowercase == 'der')
         self.assertRaises(Exception, WordDictEntry, *entries_input[1])
 
+        self.assertIsInstance(WordDictEntry(*entries_input[0]).word_en, str)
+
 class TestWordDict(unittest.TestCase):
     def test_default_csv(self):
         word_dict = WordDict.from_default_csv()
         self.assertTrue(len(word_dict.entries) > 10)
 
+
     def test_select_word(self):
         word_dict = WordDict.from_default_csv()
         selected_index, selected_word = word_dict.select_word()
         self.assertIsInstance(selected_word, WordDictEntry)
+        self.assertIsInstance(selected_word.word_en, str)
+        self.assertIsInstance(selected_word.word_de, str)
+        self.assertIsInstance(selected_word.word_de_artikel, DeArtikels)
         
     def test_verify(self):
         artikel_options = [
@@ -49,7 +58,7 @@ class TestWordDict(unittest.TestCase):
        
         selected_word_key = selected_word.word_de_artikel.lowercase
 
-        self.assertTrue(word_dict.verify_index(selected_index, DeArtikels.from_key(selected_word_key)))
+        self.assertTrue(word_dict.verify_index(selected_index, DeArtikels.from_lowercase(selected_word_key)))
 
         artikel_options.pop(artikel_options.index(selected_word.word_de_artikel))
 

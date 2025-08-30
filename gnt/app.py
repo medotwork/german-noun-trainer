@@ -13,6 +13,8 @@ from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Button, Static, Label
 
 from processors import Evaluator
+from models.article import DeArtikels
+from models.worddict import WordDict
 
 GREEN_LIGHT = "🟢"
 RED_LIGHT = "🔴"
@@ -53,6 +55,7 @@ class ArtikelChoice(Static):
         self.word_data = None
         self.word_translation_display = WordDisplay("My Translation")
         self.word_translation_display.visible = False
+        self.selected_word = None
 
     def compose(self) -> ComposeResult:
         """Create article choice buttons"""
@@ -68,21 +71,8 @@ class ArtikelChoice(Static):
 
 class ArtikelApp(App):
     """An app for quick practice of german articles"""
-
-    DATA_FILE_NAME = "most_common_nouns.csv"
-    SET_SIZE = 10
     CSS_PATH = "app.tcss"
     BINDINGS = [("d", "toggle_dark", "Toggle dark mode")]
-    KEY_MAP = {
-            "i": "der",
-            "o": "die",
-            "p": "das",
-            }
-    GENUS_COLOR_MAP = {
-            "der": "der_label",
-            "die": "die_label",
-            "das": "das_label"
-            }
 
     def __init__(self):
         super().__init__()
@@ -92,31 +82,19 @@ class ArtikelApp(App):
         self.results_box = None
         self.filter_mode = "n"
 
-        
-
     def on_mount(self) -> None:
         """ Run on creation of app """
-        self.data_file = Path(__file__).parent / "data" / self.DATA_FILE_NAME
+        data_folder = Path(__file__).parent / "data"
         records_folder = Path(__file__).parent / "records"
 
         today = datetime.now().strftime("%Y-%m-%d.log")
-        self.daily_record_path = records_folder / self.data_file.stem / today
+        self.daily_record_path = records_folder / 'default' / today
 
-        for d in [records_folder, records_folder / self.data_file.stem]:
+        for d in [records_folder, self.daily_record_path.stem]:
             if not os.path.exists(d):
                 os.mkdir(d)
 
-        with open(self.data_file, 'r', encoding='utf8') as f:
-            word_data = f.readlines()
-
-        self.words_dict = {index: item.strip().split('\t') for index, item in enumerate(word_data)}
-
-        for k, v in self.words_dict.items():
-            self.words_dict[k] = {
-                    'en': v[0].split(' ')[1],
-                    'de artikel': v[1].split(' ')[0].lower() if ' ' in v[1] else v[1],
-                    'de': v[1].split(' ')[1] if ' ' in v[1] else '',
-                    }
+        self.words_dict = WordDict.from_default_csv()
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the app"""
@@ -138,34 +116,28 @@ class ArtikelApp(App):
         self._next_noun()
 
     def _next_noun(self) -> None:
-        set_idx = sample(range(0,2000), self.SET_SIZE)
-        selected_word = self.words_dict[set_idx[0]]
+        previous_selected = self.artikel_choice.selected_word if self.artikel_choice else None
+        selected_index, selected_word = self.words_dict.select_word()
 
         self.history_box.add_to_history(
-                new = self.artikel_choice.word_data['de artikel'] + \
-                " " + \
-                self.artikel_choice.word_data['de'] + \
-                " - " + \
-                self.artikel_choice.word_data['en']
-                , 
-                classes = self.GENUS_COLOR_MAP[
-                    self.artikel_choice.word_data['de artikel']
-                    ]) if self.artikel_choice.word_data else None
+                new = previous_selected.history_repr(), 
+                classes = previous_selected.word_de_artikel.classes_key) if previous_selected else None
 
-        self.current_id = set_idx[0]
-        self.artikel_choice.word_display.update(selected_word['de'])
-        self.artikel_choice.word_data = selected_word
-        self.artikel_choice.word_translation_display.update(selected_word['en'])
+        self.current_id = selected_index
+        self.artikel_choice.word_display.update(selected_word.word_de)
+        self.artikel_choice.selected_word = selected_word
+        self.artikel_choice.word_translation_display.update(selected_word.word_en)
 
     def on_key(self, event: events.Key) -> None:
         if self.artikel_choice.word_data is None:
             self._next_noun()
 
-        if event.key in self.KEY_MAP:
-            correct_choice = (self.KEY_MAP[event.key] == self.artikel_choice.word_data['de artikel'])
+        if event.key in DeArtikels.keys():
+            verify_result = self.words_dict.verify_index(self.current_id, DeArtikels.from_key(event.key))
             with open(self.daily_record_path, 'a', encoding='utf8') as f:
-                f.write(f"{self.current_id}\t{int(correct_choice)}\n")
-            self._next_noun() if correct_choice else None
+                f.write(f"{self.current_id}\t{int(verify_result)}\n")
+            if verify_result:
+                self._next_noun()
 
         if event.key == "w":
             self.artikel_choice.word_translation_display.visible = not self.artikel_choice.word_translation_display.visible  

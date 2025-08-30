@@ -4,7 +4,7 @@ from enum import Enum
 @dataclass
 class Artikel:
     lowercase: str
-    color_key: str
+    classes_key: str
     keyboard_key: str
 
 class DeArtikels(Artikel, Enum):
@@ -16,6 +16,13 @@ class DeArtikels(Artikel, Enum):
         return a.lowercase == b.lowercase
 
     @classmethod
-    def from_key(cls, key: str):
-        return next((artikel for artikel in (cls.DER, cls.DIE, cls.DAS) if artikel.lowercase == key), None)
+    def from_lowercase(cls, lowercase: str):
+        return next((artikel for artikel in (cls.DER, cls.DIE, cls.DAS) if artikel.lowercase == lowercase), None)
 
+    @classmethod
+    def from_key(cls, key: str):
+        return next((artikel for artikel in (cls.DER, cls.DIE, cls.DAS) if artikel.keyboard_key == key), None)
+
+    @classmethod
+    def keys(cls):
+        return ['i','o','p']
