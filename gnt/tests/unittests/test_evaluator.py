@@ -6,7 +6,7 @@ import logging
 class TestDeArtikel(unittest.TestCase):
     def test_FileHandler(self):
         files = FileHandler.find_records('test_words')
-        self.assertTrue(len([i for i in files]) == 1)
+        self.assertTrue(len([i for i in files]) == 2)
 
     def test_Evaluator_day_metrics(self):
         evaluation = Evaluator.day_metrics('./records/test_words/2000-08-28.log')
